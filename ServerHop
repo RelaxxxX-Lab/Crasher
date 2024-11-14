@@ -1,0 +1,46 @@
+local function shop()
+    local success, errorMsg = pcall(function()
+        local servers = {}
+        local req = request({
+            Url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true"
+        })
+        local body = game:GetService("HttpService"):JSONDecode(req.Body)
+
+        if body and body.data then
+            for _, v in ipairs(body.data) do
+                if type(v) == "table" and tonumber(v.playing) and tonumber(v.maxPlayers) and v.playing < v.maxPlayers and v.id ~= game.JobId then
+                    table.insert(servers, v.id)
+                end
+            end
+        end
+
+        print("Servers available: " .. #servers)
+        if #servers > 0 then
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], game.Players.LocalPlayer)
+        else
+            if #game.Players:GetChildren() <= 1 then
+                game.Players.LocalPlayer:Kick("\nRejoining...")
+                task.wait()
+                game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
+            else
+                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+            end
+        end
+    end)
+
+    print("Success:", success, "Error:", errorMsg)
+
+    if not success then
+        task.wait(5)
+        shop()
+    end
+end
+
+task.spawn(function()
+    while task.wait(5) do
+        shop()
+    end
+end)
+
+-- Inicializa a primeira execução
+shop()
